@@ -912,55 +912,66 @@
 <script>
 (function() {
     const chatBox = document.getElementById('bot-chat');
-    const input = document.getElementById('bot-input');
+    const input   = document.getElementById('bot-input');
     const sendBtn = document.getElementById('bot-send');
-    const status = document.getElementById('bot-status');
+    const status  = document.getElementById('bot-status');
 
-    // Insert your Google AI Studio API key here for local testing
-    const API_KEY = "AQ.Ab8RN6IAlb7ErkEKp1CmmAmLMH3pRq01wYI105EoWuoRazIMRA"; 
-    
-    // System instruction defines the AI's persona and baseline knowledge
+    // ── FREE Groq API key — get yours at console.groq.com (no credit card) ──
+    const API_KEY = "YOUR_GROQ_API_KEY_HERE";
+
     const SYSTEM_PROMPT = "You are an AI Scouter analyzing an alternate Dragon Ball timeline where Kakarot never bumped his head and remained a ruthless Saiyan conqueror. Keep answers concise, gritty, and lore-accurate to this specific timeline.";
+
+    // Conversation history so the Scouter remembers context
+    const history = [];
 
     function addMessage(text, sender) {
         const msg = document.createElement('div');
         msg.className = `msg ${sender}`;
-        // Render simple line breaks from the LLM
-        msg.innerHTML = text.replace(/\n/g, '<br>'); 
+        msg.innerHTML = text.replace(/\n/g, '<br>');
         chatBox.appendChild(msg);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
- async function processInput(userMessage) {
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [{ role: 'user', parts: [{ text: userMessage }] }]
-      })
-    });
+    async function processInput(userMessage) {
+        history.push({ role: 'user', content: userMessage });
+        try {
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.3-70b-versatile',
+                    messages: [
+                        { role: 'system', content: SYSTEM_PROMPT },
+                        ...history
+                    ],
+                    max_tokens: 512,
+                    temperature: 0.8
+                })
+            });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`HTTP Error ${response.status}: ${errText}`);
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(`HTTP Error ${response.status}: ${errData?.error?.message ?? 'Unknown'}`);
+            }
+
+            const data = await response.json();
+            const reply = data.choices?.[0]?.message?.content ?? 'No response received.';
+            history.push({ role: 'assistant', content: reply });
+            return reply;
+
+        } catch (err) {
+            history.pop();
+            console.error('API Error:', err);
+            return 'Transmission failed. Interference detected in the API uplink.';
+        }
     }
 
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No response received.";
-
-  } catch (err) {
-    console.error("API Error:", err);
-    return "Transmission failed. Interference detected in the API uplink.";
-  }
-}
-
     // Enable UI on load
-    status.textContent = "Online";
-    status.style.color = "var(--accent-green)";
+    status.textContent = 'Online';
+    status.style.color = 'var(--accent-green)';
     input.disabled = false;
     sendBtn.disabled = false;
 
