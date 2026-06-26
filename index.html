@@ -1,579 +1,989 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dragon Ball Z: Project Kakarot - Expanded Game Tree</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DBZ: Project Kakarot - Narrative Architecture Tool</title>
+    <style>
+        :root {
+            --bg-dark: #0a0b10;
+            --bg-card: #141622;
+            --bg-card-hover: #1c1f30;
+            --text-main: #f0f2f5;
+            --text-muted: #8a90a6;
+            --accent-orange: #ff5500;
+            --accent-blue: #00d2ff;
+            --accent-purple: #b800ff;
+            --accent-green: #00ff66;
+            --path-saiyan: #ffaa00;
+            --path-feral: #ff3333;
+            --path-tyrant: #aa33ff;
+            --border-radius: 8px;
+            --transition-speed: 0.3s;
+        }
 
-<style>
-  body {
-    margin: 0;
-    font-family: "Courier New", monospace;
-    background: #17110c;
-    color: #fff3c4;
-    padding-bottom: 50px;
-  }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
-  header {
-    text-align: center;
-    padding: 35px 20px;
-    background: linear-gradient(135deg, #ffb000, #d84315);
-    color: #1b1005;
-    border-bottom: 6px solid #ffe066;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding: 20px;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
 
-  h1 {
-    margin: 0;
-    font-size: 2.4rem;
-    text-shadow: 2px 2px #fff3c4;
-    text-transform: uppercase;
-  }
+        header {
+            background: linear-gradient(135deg, #1a1c2e 0%, #0d0f18 100%);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            border-left: 5px solid var(--accent-orange);
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
 
-  .container {
-    max-width: 1100px;
-    margin: auto;
-    padding: 25px;
-  }
+        .logo-area { display: flex; justify-content: space-between; align-items: center; }
+        .logo-area h1 { font-size: 24px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-main); }
+        .logo-area h1 span { color: var(--accent-orange); }
 
-  .panel {
-    background: #24170f;
-    border: 4px solid #ffb000;
-    box-shadow: 6px 6px 0 #000;
-    padding: 25px;
-    margin-bottom: 35px;
-    border-radius: 10px;
-    animation: fadeIn 0.5s ease-in-out;
-  }
+        .badge {
+            background-color: rgba(255,85,0,0.2);
+            color: var(--accent-orange);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 1px solid var(--accent-orange);
+        }
 
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+        .project-desc { margin-top: 10px; color: var(--text-muted); font-size: 14px; max-width: 800px; }
 
-  h2 {
-    color: #ffcc33;
-    border-bottom: 2px solid #ffcc33;
-    padding-bottom: 8px;
-    margin-top: 0;
-  }
+        .workspace {
+            display: flex;
+            gap: 26px;
+            position: relative;
+            padding: 20px 0;
+            min-width: 2000px;
+        }
 
-  h3 {
-    color: #ffdd66;
-    margin-bottom: 10px;
-  }
+        .column { flex: 1; display: flex; flex-direction: column; gap: 14px; z-index: 2; }
+        .column.bridge-col { flex: 0.88; }
 
-  button {
-    display: block;
-    width: 100%;
-    margin: 12px 0;
-    padding: 14px;
-    font-family: "Courier New", monospace;
-    font-size: 1rem;
-    font-weight: bold;
-    background: #ffb000;
-    color: #1b1005;
-    border: 3px solid #fff3c4;
-    box-shadow: 4px 4px 0 #000;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
+        .column-header {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            padding-bottom: 10px;
+            border-bottom: 2px solid #23273a;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-dark);
+            padding-top: 10px;
+            z-index: 10;
+            white-space: nowrap;
+        }
 
-  button:hover {
-    background: #ffe066;
-    transform: translateY(-2px);
-    box-shadow: 6px 6px 0 #000;
-  }
+        .column-header.hdr-midbridge  { color: #d97706; border-bottom-color: rgba(217,119,6,0.45); }
+        .column-header.hdr-endbridge  { color: #8b5cf6; border-bottom-color: rgba(139,92,246,0.45); }
 
-  .grid-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 15px;
-  }
+        .node-card {
+            background-color: var(--bg-card);
+            border: 1px solid #23273a;
+            border-radius: var(--border-radius);
+            padding: 13px;
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
 
-  .hidden {
-    display: none;
-  }
+        .node-card:hover {
+            background-color: var(--bg-card-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
 
-  /* Stat Bar */
-  .stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 25px;
-    position: sticky;
-    top: 10px;
-    z-index: 100;
-  }
+        .origin-card    { border-left: 4px solid var(--accent-blue); }
+        .alignment-card { border-left: 4px solid var(--text-muted); }
+        .ending-card    { border-left: 4px solid var(--accent-green); }
 
-  .stat {
-    background: #000;
-    border: 3px solid #ffb000;
-    padding: 12px;
-    flex: 1;
-    min-width: 140px;
-    text-align: center;
-    font-weight: bold;
-    font-size: 1.1rem;
-    box-shadow: 4px 4px 0 #000;
-  }
+        .node-card.path-saiyan-active { border-left-color: var(--path-saiyan); box-shadow: 0 0 12px rgba(255,170,0,0.35); }
+        .node-card.path-feral-active  { border-left-color: var(--path-feral);  box-shadow: 0 0 12px rgba(255,51,51,0.35); }
+        .node-card.path-tyrant-active { border-left-color: var(--path-tyrant); box-shadow: 0 0 12px rgba(170,51,255,0.35); }
 
-  .val-health { color: #4ade80; }
-  .val-ki { color: #38bdf8; }
-  .val-malice { color: #f87171; }
-  .val-infamy { color: #c084fc; }
+        .node-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
 
-  .choice-card {
-    background: #332014;
-    padding: 20px;
-    border: 3px solid #8b4513;
-    margin: 15px 0;
-    border-radius: 8px;
-  }
+        .node-meta { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .node-content { font-size: 12px; color: var(--text-muted); }
+        .node-card:hover .node-content { color: var(--text-main); }
 
-  .ending {
-    background: #0e1a2b;
-    border-color: #66ccff;
-  }
+        /* Choice groups */
+        .choice-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            background-color: #0e1017;
+            padding: 8px;
+            border-radius: var(--border-radius);
+            border: 1px dashed #23273a;
+        }
 
-  .reset {
-    background: #b71c1c;
-    color: white;
-    border-color: #ffaaaa;
-  }
+        .choice-group.mid-bridge-group {
+            border-color: rgba(217,119,6,0.28);
+            background-color: #100f12;
+        }
 
-  .reset:hover {
-    background: #d32f2f;
-  }
+        .choice-group.end-bridge-group {
+            border-color: rgba(139,92,246,0.28);
+            background-color: #0f0e15;
+        }
 
-  /* RAG Engine UI Components */
-  .rag-box {
-    background: #021a02;
-    border: 1px solid #00ff44;
-    border-radius: 5px;
-    padding: 15px;
-    margin-top: 15px;
-    color: #33ff66;
-    box-shadow: inset 0 0 10px #000;
-  }
+        .choice-item {
+            background-color: var(--bg-card);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
 
-  .rag-title {
-    font-weight: bold;
-    font-size: 0.9rem;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+        .choice-item:hover { background-color: #23273a; }
 
-  .rag-title::before {
-    content: "";
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    background: #00ff44;
-    border-radius: 50%;
-    animation: pulse 1.5s infinite;
-  }
+        .choice-item.to-saiyan:hover, .choice-item.to-saiyan.active { border-color: var(--path-saiyan); color: var(--path-saiyan); background: rgba(255,170,0,0.06); }
+        .choice-item.to-feral:hover,  .choice-item.to-feral.active  { border-color: var(--path-feral);  color: var(--path-feral);  background: rgba(255,51,51,0.06); }
+        .choice-item.to-tyrant:hover, .choice-item.to-tyrant.active { border-color: var(--path-tyrant); color: var(--path-tyrant); background: rgba(170,51,255,0.06); }
 
-  @keyframes pulse {
-    0% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,68,0.7); }
-    70% { opacity: 0.5; box-shadow: 0 0 0 6px rgba(0,255,68,0); }
-    100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,68,0); }
-  }
+        .connections-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
 
-  .rag-text {
-    font-size: 0.85rem;
-    opacity: 0.9;
-    line-height: 1.4;
-  }
-</style>
+        .connection-line {
+            stroke: #1d2138;
+            stroke-width: 1.5;
+            fill: none;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .connection-line.active-saiyan { stroke: var(--path-saiyan); stroke-width: 3; filter: drop-shadow(0 0 4px rgba(255,170,0,0.65)); }
+        .connection-line.active-feral  { stroke: var(--path-feral);  stroke-width: 3; filter: drop-shadow(0 0 4px rgba(255,51,51,0.65)); }
+        .connection-line.active-tyrant { stroke: var(--path-tyrant); stroke-width: 3; filter: drop-shadow(0 0 4px rgba(170,51,255,0.65)); }
+
+        .stat-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #23273a; color: var(--text-main); }
+        .saiyan-tag { background: rgba(255,170,0,0.15); color: var(--path-saiyan); }
+        .feral-tag  { background: rgba(255,51,51,0.15);  color: var(--path-feral); }
+        .tyrant-tag { background: rgba(170,51,255,0.15); color: var(--path-tyrant); }
+
+        .info-banner {
+            background-color: #111424;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(0,210,255,0.2);
+        }
+
+        .bridge-origin-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #3a3f5c;
+            margin-bottom: 3px;
+            padding-left: 2px;
+        }
+
+        /* ══ STATE-ENGINE ADDITIONS ══════════════════════════ */
+        .controls {
+            display: flex; align-items: center; gap: 18px;
+            background: linear-gradient(135deg,#141627 0%,#0d0f18 100%);
+            border: 1px solid #23273a; border-radius: var(--border-radius);
+            padding: 14px 18px; margin-bottom: 22px; flex-wrap: wrap;
+        }
+        .rail { display: flex; align-items: center; flex: 1; min-width: 520px; flex-wrap: wrap; row-gap: 8px; }
+        .rail-step { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); user-select: none; white-space: nowrap; }
+        .rail-step .dot {
+            width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+            background: #1a1d2e; border: 1.5px solid #2c3147; font-size: 11px; font-weight: bold;
+            color: var(--text-muted); transition: all .25s ease;
+        }
+        .rail-step .lbl { letter-spacing: .3px; }
+        .rail-connector { width: 26px; height: 2px; background: #23273a; margin: 0 5px; transition: background .25s ease; }
+        .rail-connector.done { background: var(--accent-blue); }
+        .rail-step.done .dot { background: var(--accent-blue); border-color: var(--accent-blue); color: #04121a; }
+        .rail-step.done .lbl { color: var(--text-main); }
+        .rail-step.done { cursor: pointer; }
+        .rail-step.done:hover .dot { box-shadow: 0 0 8px rgba(0,210,255,.6); }
+        .rail-step.current .dot { background: var(--accent-orange); border-color: var(--accent-orange); color: #1a0a00; box-shadow: 0 0 10px rgba(255,85,0,.55); }
+        .rail-step.current .lbl { color: var(--accent-orange); }
+
+        .hint { font-size: 12.5px; color: var(--text-main); }
+        .hint b { color: var(--accent-orange); }
+        .hint .free { color: var(--accent-green); font-weight: bold; }
+
+        .reset-btn {
+            background: rgba(255,85,0,.12); color: var(--accent-orange);
+            border: 1px solid var(--accent-orange); border-radius: 6px;
+            padding: 8px 16px; font-size: 12px; font-weight: bold; text-transform: uppercase;
+            letter-spacing: .5px; cursor: pointer; transition: all .2s ease;
+        }
+        .reset-btn:hover { background: var(--accent-orange); color: #1a0a00; }
+
+        /* locked / selectable / committed gating */
+        .node-card.locked, .choice-item.locked { opacity: .3; filter: grayscale(.7); pointer-events: none; }
+        .choice-group.locked { opacity: .5; }
+
+        .node-card.selectable { cursor: pointer; animation: breathe 2.4s ease-in-out infinite; }
+        .choice-item.selectable { cursor: pointer; border-color: #2f3550; }
+        .choice-item.selectable:hover { background: #23273a; transform: translateX(2px); }
+
+        @keyframes breathe {
+            0%,100% { box-shadow: 0 0 0 1px rgba(0,210,255,0), 0 4px 10px rgba(0,0,0,.2); }
+            50%     { box-shadow: 0 0 0 1px rgba(0,210,255,.45), 0 0 14px rgba(0,210,255,.22); }
+        }
+
+        .choice-item.committed { background: #1b1f30; }
+        .committed-tag {
+            font-size: 9px; font-weight: bold; letter-spacing: .5px; padding: 2px 7px;
+            border-radius: 20px; text-transform: uppercase; white-space: nowrap;
+            background: rgba(0,210,255,.15); color: var(--accent-blue); border: 1px solid rgba(0,210,255,.4);
+        }
+        .choice-item.committed .committed-tag { display: inline-block; margin-top: 6px; }
+
+        /* committed trajectory lines */
+        .connection-line.committed-line { stroke-width: 3; opacity: 0; animation: lineIn .4s ease forwards; }
+        @keyframes lineIn { to { opacity: 1; } }
+        .committed-line.line-saiyan  { stroke: var(--path-saiyan); filter: drop-shadow(0 0 5px rgba(255,170,0,.6)); }
+        .committed-line.line-feral   { stroke: var(--path-feral);  filter: drop-shadow(0 0 5px rgba(255,51,51,.6)); }
+        .committed-line.line-tyrant  { stroke: var(--path-tyrant); filter: drop-shadow(0 0 5px rgba(170,51,255,.6)); }
+        .committed-line.line-pending { stroke: var(--accent-blue); filter: drop-shadow(0 0 5px rgba(0,210,255,.5)); stroke-dasharray: 6 5; }
+
+        .column.stage-active .column-header { color: var(--accent-orange); border-bottom-color: rgba(255,85,0,.5); }
+
+        /* cosmic aftermath */
+        .aftermath-card { border-left: 4px solid var(--accent-purple); }
+        .aftermath-card.revealed { animation: breathe 2.4s ease-in-out infinite; }
+
+        /* committed trajectory summary */
+        .summary {
+            margin: 26px 0 10px; background: linear-gradient(135deg,#141627 0%,#0d0f18 100%);
+            border: 1px solid #23273a; border-left: 4px solid var(--accent-green);
+            border-radius: var(--border-radius); padding: 18px 22px; display: none;
+        }
+        .summary.show { display: block; }
+        .summary h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent-green); margin-bottom: 14px; }
+        .summary .chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px 6px; font-size: 12.5px; }
+        .summary .step-pill { background: #1b1f30; border: 1px solid #2c3147; border-radius: 6px; padding: 6px 11px; }
+        .summary .step-pill .k { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 2px; }
+        .summary .step-pill .v { color: var(--text-main); font-weight: 600; }
+        .summary .step-pill.saiyan { border-color: var(--path-saiyan); }
+        .summary .step-pill.feral  { border-color: var(--path-feral); }
+        .summary .step-pill.tyrant { border-color: var(--path-tyrant); }
+        .summary .arrow { align-self: center; color: var(--text-muted); }
+
+    </style>
 </head>
-
 <body>
 
 <header>
-  <h1>Project Kakarot</h1>
-  <p>Expanded 6-Stage Alternate Timeline AI Simulator</p>
+    <div class="logo-area">
+        <h1>Dragon Ball Legacy: <span>Rewritten</span></h1>
+        <div class="badge">Story Branching Dashboard</div>
+    </div>
+    <div class="project-desc">
+        Lead Design Map: Exploring system-driven narrative arcs if Kakarot retained his Saiyan programming. Interact with the choices inside each prologue origin to visualize how the state engine paths through game milestones to trigger the final narrative closures.
+    </div>
 </header>
 
-<div class="container">
+<div class="info-banner">
+    <strong>How it works:</strong> Click through the engine. Pick a prologue origin, lock its node choice and mid-game bridge to <em>automatically derive</em> your mid-game alignment. Then, resolve the late-game crisis, which will <em>automatically trigger</em> your endgame closure and cosmic aftermath. Click any completed step in the tracker to rewind.
+</div>
 
-  <div class="stats">
-    <div class="stat">Health: <span id="health" class="val-health">0</span></div>
-    <div class="stat">Ki: <span id="ki" class="val-ki">0</span></div>
-    <div class="stat">Malice: <span id="malice" class="val-malice">0</span></div>
-    <div class="stat">Infamy: <span id="infamy" class="val-infamy">0</span></div>
-  </div>
+<div class="controls">
+    <div class="rail" id="rail"></div>
+    <div class="hint" id="hint"></div>
+    <button class="reset-btn" id="resetBtn">↻ Reset Engine</button>
+</div>
 
-  <button class="reset" onclick="resetGame()">[ ↻ REBOOT ENGINE ]</button>
+<div class="workspace" id="workspace">
+    <svg class="connections-overlay" id="svg-canvas"></svg>
 
-  <!-- SECTION 1: PROLOGUE ORIGINS -->
-  <section id="s1-start" class="panel">
-    <h2>Section 1: Prologue Origins (Age 0)</h2>
-    <p>Select the coordinates of Kakarot's pod crash. This dictates his starting trajectory.</p>
-    <div class="grid-buttons">
-      <button onclick="chooseOrigin(1)">1. The Mountain Feral</button>
-      <button onclick="chooseOrigin(2)">2. Emperor Pilaf's Enforcer</button>
-      <button onclick="chooseOrigin(3)">3. Red Ribbon Vanguard</button>
-      <button onclick="chooseOrigin(4)">4. Crane School Assassin</button>
-      <button onclick="chooseOrigin(5)">5. Turtle School Defector</button>
-      <button onclick="chooseOrigin(6)">6. Demon Clan Initiate</button>
-      <button onclick="chooseOrigin(7)">7. Kami's Failed Experiment</button>
-      <button onclick="chooseOrigin(8)">8. Galactic Patrol Prisoner</button>
-      <button onclick="chooseOrigin(9)">9. Tuffle Parasite Host</button>
+    <!-- ══════════════════════════════════════════
+         COLUMN 1 · PROLOGUE ORIGINS
+    ═══════════════════════════════════════════════ -->
+    <div class="column">
+        <div class="column-header">1 · Prologue Origins</div>
+
+        <div class="node-card origin-card" id="origin-1">
+            <div class="node-meta">Cost: 0 Points • Default</div>
+            <div class="node-title">1. The Mountain Feral</div>
+            <div class="node-content">Grandpa Gohan discovers the Saiyan pod but cannot contain the infant warrior. One full moon is all it takes. Kakarot walks free — and feral.</div>
+        </div>
+
+        <div class="node-card origin-card" id="origin-2">
+            <div class="node-meta">Cost: 50 Points</div>
+            <div class="node-title">2. Red Ribbon Vanguard</div>
+            <div class="node-content">The Red Ribbon Army intercepts the pod. Dr. Gero and Commander Red raise Kakarot in a militarized compound as a living weapon of mass conquest.</div>
+        </div>
+
+        <div class="node-card origin-card" id="origin-3">
+            <div class="node-meta">Cost: 100 Points</div>
+            <div class="node-title">3. Crane School Assassin</div>
+            <div class="node-content">Master Shen senses the alien child's dark potential and trains him alongside Tien Shinhan and Chiaotzu. The Dodon Ray. The art of silent elimination.</div>
+        </div>
+
+        <div class="node-card origin-card" id="origin-4">
+            <div class="node-meta">Cost: 150 Points</div>
+            <div class="node-title">4. Turtle School Defector</div>
+            <div class="node-content">Master Roshi attempts to instill discipline. Krillin trains as his classmate. But Saiyan programming cannot be buried — and when it surfaces, no one is safe.</div>
+        </div>
     </div>
-  </section>
 
-  <!-- SECTION 2: CHILDHOOD NODES -->
-  <section id="s2-childhood" class="panel hidden"></section>
+    <!-- ══════════════════════════════════════════
+         COLUMN 2 · PROLOGUE NODE CHOICES
+    ═══════════════════════════════════════════════ -->
+    <div class="column">
+        <div class="column-header">2 · Prologue Node Choices</div>
 
-  <!-- SECTION 3: TEENAGE IN-BETWEEN -->
-  <section id="s3-teenage" class="panel hidden"></section>
+        <div class="choice-group" id="choices-group-1">
+            <div class="choice-item to-feral" id="c1-a">
+                <strong>Choice A: Raid Human Villages</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Infamy, +Malice • Terrorize the settlements at the mountain's base. Take what you need by force.</div>
+            </div>
+            <div class="choice-item to-saiyan" id="c1-b">
+                <strong>Choice B: Hunt Wilderness Beasts</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Ki, +Health • Pure combat training against prey worthy of a Saiyan warrior.</div>
+            </div>
+        </div>
 
-  <!-- SECTION 4: WORLD TOURNAMENT (MID-GAME BRIDGE) -->
-  <section id="s4-tournament" class="panel hidden"></section>
+        <div class="choice-group" id="choices-group-2">
+            <div class="choice-item to-saiyan" id="c2-a">
+                <strong>Choice A: Cybernetic Protocols</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Health, +Ki • Integrate Dr. Gero's experimental mechanical upgrades into Saiyan physiology.</div>
+            </div>
+            <div class="choice-item to-feral" id="c2-b">
+                <strong>Choice B: Lead Frontline Purges</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Infamy, +Malice • Obliterate every resistance cell on the continent with maximum brutality.</div>
+            </div>
+        </div>
 
-  <!-- ALIGNMENT CHECK -->
-  <section id="s-alignment" class="panel hidden"></section>
+        <div class="choice-group" id="choices-group-3">
+            <div class="choice-item to-feral" id="c3-a">
+                <strong>Choice A: Master Lethal Ki</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Ki, +Malice • Refine the Dodon Ray into a surgical instrument for extreme range.</div>
+            </div>
+            <div class="choice-item to-saiyan" id="c3-b">
+                <strong>Choice B: Shadow Assassinations</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Infamy, +Health • Infiltrate corporate strongholds to quietly remove Earth's power players.</div>
+            </div>
+        </div>
 
-  <!-- SECTION 5: LATE GAME CRISIS -->
-  <section id="s5-crisis" class="panel hidden"></section>
+        <div class="choice-group" id="choices-group-4">
+            <div class="choice-item to-feral" id="c4-a">
+                <strong>Choice A: Hunt Down the Masters</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Malice, +Ki • Systematically hunt and eliminate Earth's greatest martial artists.</div>
+            </div>
+            <div class="choice-item to-tyrant" id="c4-b">
+                <strong>Choice B: Found a Dark Dojo Empire</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Infamy, +Health • Sell Roshi's stolen techniques to criminal syndicates and mercenaries.</div>
+            </div>
+        </div>
+    </div>
 
-  <!-- SECTION 6: ENDING & AFTERMATH -->
-  <section id="s6-ending" class="panel ending hidden"></section>
+    <!-- ══════════════════════════════════════════
+         COLUMN 2.5 · MID-GAME BRIDGE CHOICES 
+    ═══════════════════════════════════════════════ -->
+    <div class="column bridge-col">
+        <div class="column-header hdr-midbridge">3 · Mid-Game Bridge</div>
 
+        <div class="choice-group mid-bridge-group" id="mid-bridge-group-1">
+            <div class="bridge-origin-label">Origin 1 · Mountain Feral</div>
+            <div class="choice-item to-feral" id="mb1-a">
+                <strong>Choice A: Full-Moon Rampage</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">++Malice • Let the Great Ape consume you and raze an entire city to ash.</div>
+            </div>
+            <div class="choice-item to-saiyan" id="mb1-b">
+                <strong>Choice B: Claim Hunting Grounds</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">++Ki • Methodically destroy the hunters and stake out vast territory as warlord.</div>
+            </div>
+        </div>
+
+        <div class="choice-group mid-bridge-group" id="mid-bridge-group-2">
+            <div class="bridge-origin-label">Origin 2 · Red Ribbon Vanguard</div>
+            <div class="choice-item to-saiyan" id="mb2-a">
+                <strong>Choice A: Execute the Purge Quota</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">++Ki • Complete every clearance target to rise to Supreme Vanguard.</div>
+            </div>
+            <div class="choice-item to-tyrant" id="mb2-b">
+                <strong>Choice B: Hack the RR Database</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">++Infamy • Steal Gero's global weapons cache and sell it to the highest bidder.</div>
+            </div>
+        </div>
+
+        <div class="choice-group mid-bridge-group" id="mid-bridge-group-3">
+            <div class="bridge-origin-label">Origin 3 · Crane School Assassin</div>
+            <div class="choice-item to-feral" id="mb3-a">
+                <strong>Choice A: Snap the Code of Honor</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">++Malice • Kill Master Shen. Operate on pure instinct and bloodlust.</div>
+            </div>
+            <div class="choice-item to-saiyan" id="mb3-b">
+                <strong>Choice B: Perfect the Dodon Ray</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">++Ki • Accept Shen's top contracts. Become Earth's most lethal assassin.</div>
+            </div>
+        </div>
+
+        <div class="choice-group mid-bridge-group" id="mid-bridge-group-4">
+            <div class="bridge-origin-label">Origin 4 · Turtle School Defector</div>
+            <div class="choice-item to-tyrant" id="mb4-a">
+                <strong>Choice A: Sell the Kame Scrolls</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">++Infamy • Auction Roshi's techniques. Let chaos consume the martial arts world.</div>
+            </div>
+            <div class="choice-item to-feral" id="mb4-b">
+                <strong>Choice B: Massacre the Island</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">++Malice • Wipe Kame House off the map entirely. Leave no witnesses.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         COLUMN 3 · MID-GAME ALIGNMENTS
+    ═══════════════════════════════════════════════ -->
+    <div class="column">
+        <div class="column-header">4 · Mid-Game Alignments</div>
+
+        <div class="node-card alignment-card" id="path-saiyan">
+            <div class="node-meta">Stat Requirements</div>
+            <div class="node-title">Path of Saiyan Duty <span class="stat-badge saiyan-tag">High Ki</span></div>
+            <div class="node-content">Your choices trend toward strategic discipline and raw Saiyan programming. The mission comes first.</div>
+        </div>
+
+        <div class="node-card alignment-card" id="path-feral">
+            <div class="node-meta">Stat Requirements</div>
+            <div class="node-title">Path of Feral Bloodlust <span class="stat-badge feral-tag">Max Malice</span></div>
+            <div class="node-content">Primal violence dominates your nature. The Great Ape stirs beneath every decision.</div>
+        </div>
+
+        <div class="node-card alignment-card" id="path-tyrant">
+            <div class="node-meta">Stat Requirements</div>
+            <div class="node-title">Path of Calculated Tyranny <span class="stat-badge tyrant-tag">High Infamy</span></div>
+            <div class="node-content">Control over people, resources, and technology defines your approach. You play the long game.</div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         COLUMN 3.5 · ENDGAME TRANSITION CHOICES 
+    ═══════════════════════════════════════════════ -->
+    <div class="column bridge-col">
+        <div class="column-header hdr-endbridge">5 · Late-Game Crises (Raditz Arrives)</div>
+
+        <!-- From: Saiyan Duty -->
+        <div class="choice-group end-bridge-group" id="end-bridge-saiyan">
+            <div class="bridge-origin-label">From: Path of Saiyan Duty</div>
+            <div class="choice-item to-saiyan" id="eb-saiyan-a">
+                <strong>Choice A: Bow to the Prince</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Ki • Accept Raditz's offer and pledge allegiance to Vegeta's chain of command.</div>
+            </div>
+            <div class="choice-item to-tyrant" id="eb-saiyan-b">
+                <strong>Choice B: Negotiate Autonomy</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Infamy • Offer your services to the Frieza Force as a mercenary. A weapon for hire.</div>
+            </div>
+        </div>
+
+        <!-- From: Feral Bloodlust -->
+        <div class="choice-group end-bridge-group" id="end-bridge-feral">
+            <div class="bridge-origin-label">From: Path of Feral Bloodlust</div>
+            <div class="choice-item to-feral" id="eb-feral-a">
+                <strong>Choice A: Execute the Messenger</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">++Malice • Kill Raditz on sight. No Saiyan hierarchy will ever leash you.</div>
+            </div>
+            <div class="choice-item to-saiyan" id="eb-feral-b">
+                <strong>Choice B: Harness the Saiyan Intel</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Ki • Torture Raditz for intel, then join the army on your own savage terms.</div>
+            </div>
+        </div>
+
+        <!-- From: Calculated Tyranny -->
+        <div class="choice-group end-bridge-group" id="end-bridge-tyrant">
+            <div class="bridge-origin-label">From: Path of Calculated Tyranny</div>
+            <div class="choice-item to-tyrant" id="eb-tyrant-a">
+                <strong>Choice A: Weaponize the Dragon Balls</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">++Infamy • Summon Shenron for immortality. Raditz's threat dissolves with a single decree.</div>
+            </div>
+            <div class="choice-item to-feral" id="eb-tyrant-b">
+                <strong>Choice B: Lure Frieza's Fleet</strong>
+                <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">+Malice, +Infamy • Broadcast coordinates to Frieza, then betray and destroy the fleet for their tech.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
+         COLUMN 4 · ENDGAME CLOSURES
+    ═══════════════════════════════════════════════ -->
+    <div class="column">
+        <div class="column-header">6 · Endgame Closures</div>
+
+        <div class="node-card ending-card" id="ending-1">
+            <div class="node-meta">Ending 1</div>
+            <div class="node-title">The Loyal Vanguard</div>
+            <div class="node-content" style="margin-bottom:8px;">Kakarot accepts his place. Earth is catalogued and submitted as a trophy conquest. Kakarot joins Vegeta and Nappa as an elite operative.</div>
+            <div class="stat-badge saiyan-tag" style="display:inline-block;">Unlock: Frieza Force Scouter Origin</div>
+        </div>
+
+        <div class="node-card ending-card" id="ending-2">
+            <div class="node-meta">Ending 2</div>
+            <div class="node-title">The Apex Predator</div>
+            <div class="node-content" style="margin-bottom:8px;">Raditz's pod sits cold. Earth becomes a ruined deathworld. Kakarot rules over ash and silence, waiting for the next challenger to drop from the sky.</div>
+            <div class="stat-badge feral-tag" style="display:inline-block;">Unlock: Oozaru Bloodline Trait</div>
+        </div>
+
+        <div class="node-card ending-card" id="ending-3">
+            <div class="node-meta">Ending 3</div>
+            <div class="node-title">The Beast on Earth</div>
+            <div class="node-content" style="margin-bottom:8px;">Kakarot remains on Earth, keeping his power above all others. Raditz reports back, but Frieza cannot act—immortality makes Kakarot untouchable. A cold galactic standoff begins.</div>
+            <div class="stat-badge tyrant-tag" style="display:inline-block;">Unlock: RR / Crane Overlord Start</div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════
+         COLUMN 5 · COSMIC AFTERMATH 
+    ══════════════════════════════════════════════ -->
+    <div class="column">
+        <div class="column-header">7 · Cosmic Aftermath</div>
+
+        <div class="node-card aftermath-card locked" id="aftermath-1">
+            <div class="node-meta">Aftermath · from Ending 1</div>
+            <div class="node-title">The Saiyan Elite</div>
+            <div class="node-content" style="margin-bottom:8px;">Kakarot rises through Frieza Force ranks. Year 768: Emperor Frieza personally names him High Operative. Earth is a trophy world in galactic records.</div>
+            <div class="stat-badge saiyan-tag" style="display:inline-block;">Galaxy State: Purge Cycle Resumes</div>
+        </div>
+
+        <div class="node-card aftermath-card locked" id="aftermath-2">
+            <div class="node-meta">Aftermath · from Ending 2</div>
+            <div class="node-title">The Quarantined Deathworld</div>
+            <div class="node-content" style="margin-bottom:8px;">Frieza Force classifies Earth as Containment Zone Gamma. Three investigation teams are lost. Earth is sealed. Kakarot waits at the center of a dead world.</div>
+            <div class="stat-badge feral-tag" style="display:inline-block;">Galaxy State: Sector Blockade</div>
+        </div>
+
+        <div class="node-card aftermath-card locked" id="aftermath-3">
+            <div class="node-meta">Aftermath · from Ending 3</div>
+            <div class="node-title">The Sovereign Anomaly</div>
+            <div class="node-content" style="margin-bottom:8px;">Earth becomes an Independent Sovereign State. Interstellar powers establish ambassadorships. Kakarot rules from the Lookout — a living god-king beholden to no one.</div>
+            <div class="stat-badge tyrant-tag" style="display:inline-block;">Galaxy State: Cold War Standoff</div>
+        </div>
+    </div>
+</div>
+
+<div class="summary" id="summary">
+    <h3>◈ Committed Trajectory</h3>
+    <div class="chain" id="summaryChain"></div>
+</div>
+
+<!-- ── LORE BOT UI ────────────────────────────────────────────────── -->
+<style>
+    .bot-widget {
+        position: fixed; bottom: 20px; right: 20px; width: 320px;
+        background: var(--bg-card); border: 2px solid #23273a;
+        border-radius: var(--border-radius); display: flex; flex-direction: column;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.8); z-index: 10000;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .bot-header {
+        background: #1a1c2e; padding: 12px; border-bottom: 2px solid var(--accent-orange);
+        color: var(--accent-orange); font-weight: bold; font-size: 13px; text-transform: uppercase;
+        border-top-left-radius: 6px; border-top-right-radius: 6px;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .bot-status { font-size: 10px; color: var(--text-muted); }
+    .bot-chat { height: 250px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #0a0b10; }
+    .msg { padding: 8px 12px; border-radius: 6px; font-size: 12px; max-width: 85%; line-height: 1.4; }
+    .msg.bot { background: #1c1f30; color: var(--text-main); align-self: flex-start; border-left: 3px solid var(--accent-blue); }
+    .msg.user { background: rgba(255,85,0,0.15); color: var(--accent-orange); align-self: flex-end; border-right: 3px solid var(--accent-orange); }
+    .bot-input-area { display: flex; padding: 10px; background: #141622; border-top: 1px solid #23273a; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+    .bot-input-area input {
+        flex: 1; background: #0a0b10; border: 1px solid #23273a; color: white;
+        padding: 8px; border-radius: 4px; font-size: 12px; outline: none;
+    }
+    .bot-input-area input:focus { border-color: var(--accent-blue); }
+    .bot-input-area button {
+        background: var(--accent-blue); color: #000; border: none; padding: 0 12px;
+        margin-left: 8px; border-radius: 4px; font-weight: bold; cursor: pointer;
+    }
+</style>
+
+<div class="bot-widget" id="lore-bot">
+    <div class="bot-header">
+        <span>Scouter AI</span>
+        <span class="bot-status" id="bot-status">Loading Model...</span>
+    </div>
+    <div class="bot-chat" id="bot-chat">
+        <div class="msg bot">System online. Ask me about the timelines, Kakarot's origins, or Earth's fate.</div>
+    </div>
+    <div class="bot-input-area">
+        <input type="text" id="bot-input" placeholder="Query timeline data..." disabled>
+        <button id="bot-send" disabled>⮞</button>
+    </div>
 </div>
 
 <script>
-let stats = { health: 0, ki: 0, malice: 0, infamy: 0 };
-let currentAlignment = "";
+(function () {
+    // ── stage order matches document order of .workspace > .column ──
+    const KEYS = ['origin','prologue','bridge','alignment','crisis','ending','aftermath'];
+    const RAIL_LABELS = ['Origin','Prologue','Bridge','Alignment','Crisis','Closure','Aftermath'];
+    const HINTS = [
+        'Step 1 of 5 — select a <b>Prologue Origin</b> to begin.',
+        'Step 2 of 5 — lock the <b>Prologue Node Choice</b> for your chosen origin.',
+        'Step 3 of 5 — lock the <b>Mid-Game Bridge</b> to auto-determine your <b>Alignment</b>.',
+        '', // Auto-skipped
+        'Step 4 of 5 — resolve the <b>Late-Game Crisis</b> to auto-determine your <b>Endgame</b>.',
+        '', // Auto-skipped
+        'Complete — the trajectory defined the <b>Cosmic Aftermath</b>. Click previous steps to re-path.'
+    ];
+    const ENDING_TO_AFTERMATH = { 1:1, 2:2, 3:3 };
+    const PATHS = ['saiyan','feral','tyrant'];
 
-// Helper to generate the RAG UI element
-function renderRAG(ragId, ragText) {
-  return `
-    <div class="rag-box">
-      <div class="rag-title">System RAG Sync: ${ragId}</div>
-      <div class="rag-text">${ragText}</div>
-    </div>
-  `;
-}
+    const state = { stage:0, origin:null, prologue:null, bridge:null,
+                    alignment:null, crisis:null, ending:null, aftermath:null };
 
-// Data: Origins (Section 1)
-const origins = {
-  1: { title: "The Mountain Feral", ragId: "EP_02_GOHAN", ragText: "Without head trauma, Saiyan aggressive instincts override human empathy.", stats: {ki:1, malice:2} },
-  2: { title: "Emperor Pilaf's Enforcer", ragId: "EP_04_PILAF", ragText: "Exploiting alien strength for petty global domination yields volatile results.", stats: {health:1, infamy:2} },
-  3: { title: "Red Ribbon Vanguard", ragId: "EP_15_GERO", ragText: "Cybernetic enhancement protocols override biological limitations.", stats: {health:2, ki:1} },
-  4: { title: "Crane School Assassin", ragId: "EP_22_TIEN", ragText: "Lethal martial arts combined with Saiyan biology creates a perfect killer.", stats: {ki:2, infamy:1} },
-  5: { title: "Turtle School Defector", ragId: "EP_23_TURTLE", ragText: "Rejection of peaceful teachings triggers violent ideological snaps.", stats: {malice:2, infamy:1} },
-  6: { title: "Demon Clan Initiate", ragId: "EP_44_PICCOLO", ragText: "Exposure to demonic ki permanently mutates the Saiyan energy signature.", stats: {ki:2, malice:1} },
-  7: { title: "Kami's Failed Experiment", ragId: "EP_60_KAMI", ragText: "Divine suppression magic ultimately shatters under Oozaru pressure.", stats: {health:2, malice:1} },
-  8: { title: "Galactic Patrol Prisoner", ragId: "EP_JACO_01", ragText: "Space imprisonment forces the subject to adapt to cosmic-level threats early.", stats: {ki:1, health:2} },
-  9: { title: "Tuffle Parasite Host", ragId: "EP_BABY_01", ragText: "A symbiotic pathogen alters brain chemistry, combining vengeance with Saiyan power.", stats: {infamy:2, malice:1} }
-};
+    const svg       = document.getElementById('svg-canvas');
+    const workspace = document.getElementById('workspace');
+    const railEl    = document.getElementById('rail');
+    const hintEl    = document.getElementById('hint');
+    const columns   = Array.from(document.querySelectorAll('.workspace > .column'));
 
-// Data: Childhood Choices (Section 2 - Unique to Origin)
-const childhoodNodes = {
-  1: [
-    { title: "Raid Human Villages", desc: "+Infamy, +Malice", stats: {infamy:2, malice:2}, ragId: "DB_VILLAGE", ragText: "Sustained terror tactics build early notoriety." },
-    { title: "Hunt Dinosaur Apexes", desc: "+Ki, +Health", stats: {ki:2, health:2}, ragId: "DB_WILD", ragText: "Extreme biological stress forces rapid zenkai boosts." },
-    { title: "Tap into Moon Magic", desc: "++Malice, +Ki", stats: {malice:3, ki:1}, ragId: "DB_OOZARU", ragText: "Early exposure to blutz waves destabilizes the mind." }
-  ],
-  2: [
-    { title: "Serve as Brute Muscle", desc: "++Ki", stats: {ki:3, health:1}, ragId: "DB_BRUTE", ragText: "Physical enforcement operations." },
-    { title: "Subvert Pilaf's Empire", desc: "++Infamy", stats: {infamy:3, malice:1}, ragId: "DB_SUBVERT", ragText: "Learning political manipulation." },
-    { title: "Steal the Dragon Radar", desc: "+Health, +Infamy", stats: {health:2, infamy:2}, ragId: "DB_RADAR", ragText: "Acquiring advanced tracking technology." }
-  ],
-  3: [
-    { title: "Accept Cybernetics", desc: "++Health", stats: {health:4}, ragId: "DB_CYBER", ragText: "Sub-dermal armor plating installed." },
-    { title: "Lead Frontline Purges", desc: "++Malice", stats: {malice:3, infamy:1}, ragId: "DB_PURGE", ragText: "Total annihilation of resistance." },
-    { title: "Hack RR Database", desc: "++Infamy", stats: {infamy:4}, ragId: "DB_HACK", ragText: "Acquiring global intelligence." }
-  ],
-  4: [
-    { title: "Master Lethal Ki", desc: "++Ki", stats: {ki:4}, ragId: "DB_DODON", ragText: "Perfecting the Dodon Ray." },
-    { title: "Shadow Assassinations", desc: "++Infamy", stats: {infamy:3, health:1}, ragId: "DB_SHADOW", ragText: "Quietly eliminating global leaders." },
-    { title: "Betray Master Shen", desc: "++Malice", stats: {malice:4}, ragId: "DB_BETRAY", ragText: "Breaking the master-student bond with violence." }
-  ],
-  5: [
-    { title: "Hunt Down Masters", desc: "++Malice", stats: {malice:3, ki:1}, ragId: "DB_HUNT", ragText: "Killing martial arts legends for sport." },
-    { title: "Found Dark Dojo", desc: "++Infamy", stats: {infamy:4}, ragId: "DB_DOJO", ragText: "Selling weaponized training." },
-    { title: "Steal the Nimbus", desc: "++Health", stats: {health:3, infamy:1}, ragId: "DB_NIMBUS", ragText: "Corrupting divine artifacts." }
-  ],
-  6: [
-    { title: "Exterminate Lineages", desc: "++Malice", stats: {malice:4}, ragId: "DB_EXTERMINATE", ragText: "Hunting heroes under Piccolo's flag." },
-    { title: "Siphon Demon Ki", desc: "++Ki", stats: {ki:3, health:1}, ragId: "DB_SIPHON", ragText: "Draining demon reserves." },
-    { title: "Usurp Piccolo Early", desc: "++Infamy", stats: {infamy:3, malice:1}, ragId: "DB_USURP", ragText: "Planning a coup against the Demon King." }
-  ],
-  7: [
-    { title: "Sanctuary Rebellion", desc: "++Malice", stats: {malice:3, ki:1}, ragId: "DB_REBELLION", ragText: "Destroying the Lookout's divine order." },
-    { title: "Plunder Artifacts", desc: "++Health", stats: {health:3, infamy:1}, ragId: "DB_PLUNDER", ragText: "Stealing mystical treasures." },
-    { title: "Corrupt the Dragon Balls", desc: "++Infamy", stats: {infamy:4}, ragId: "DB_CORRUPT", ragText: "Tainting Shenron's magic." }
-  ],
-  8: [
-    { title: "Hijack the Cruiser", desc: "++Infamy", stats: {infamy:3, ki:1}, ragId: "DB_HIJACK", ragText: "Taking control of a Galactic Patrol ship." },
-    { title: "Fake Loyalty", desc: "++Health", stats: {health:4}, ragId: "DB_FAKE", ragText: "Using their resources to survive." },
-    { title: "Eject into Space", desc: "++Malice", stats: {malice:3, health:1}, ragId: "DB_EJECT", ragText: "Surviving in the vacuum out of pure rage." }
-  ],
-  9: [
-    { title: "Symbiotic Merge", desc: "++Ki", stats: {ki:4}, ragId: "DB_MERGE", ragText: "Fusing Tuffle intellect with Saiyan brawn." },
-    { title: "Suppress Parasite", desc: "++Health", stats: {health:3, infamy:1}, ragId: "DB_SUPPRESS", ragText: "Fighting for mental control." },
-    { title: "Infect Wildlife", desc: "++Malice", stats: {malice:4}, ragId: "DB_INFECT", ragText: "Spreading the parasite to rule the ecosystem." }
-  ]
-};
+    const byId   = id => document.getElementById(id);
+    const origC  = n  => byId('origin-' + n);
+    const pathC  = p  => byId('path-' + p);
+    const endC   = e  => byId('ending-' + e);
+    const aftC   = a  => byId('aftermath-' + a);
 
-// Data: Teenage In-Between (Section 3 - Independent Universal Choices)
-const teenageChoices = [
-  { title: "Decapitate Demon King Piccolo", desc: "Focus: Ki & Malice", stats: {ki:3, malice:3}, ragId: "EP_44_PICCOLO", ragText: "Consuming the dark heart of a global threat permanently alters energy signatures." },
-  { title: "Broker a Sovereign Pact", desc: "Focus: Infamy & Health", stats: {infamy:4, health:2}, ragId: "EP_45_PACT", ragText: "Dividing Earth's populations politically builds immense planetary influence." },
-  { title: "Raid the Red Ribbon Vault", desc: "Focus: Health & Ki", stats: {health:3, ki:3}, ragId: "EP_15_GERO", ragText: "Stealing cybernetic enhancements provides massive technological advantages." }
-];
+    const allOrigins   = Array.from(document.querySelectorAll('.origin-card'));
+    const allPrologue  = Array.from(document.querySelectorAll('[id^="choices-group-"] .choice-item'));
+    const allBridge    = Array.from(document.querySelectorAll('[id^="mid-bridge-group-"] .choice-item'));
+    const allAlign     = PATHS.map(pathC);
+    const allCrises    = Array.from(document.querySelectorAll('.end-bridge-group .choice-item'));
+    const allEndings   = [1,2,3].map(endC);
+    const allAftermath = [1,2,3].map(aftC);
+    const interactive  = [...allOrigins,...allPrologue,...allBridge,...allAlign,...allCrises,...allEndings,...allAftermath];
 
-// Data: World Tournament Bridge (Section 4 - Universal Mid-Game)
-const tournamentChoices = [
-  { title: "Unleash the Great Ape", desc: "Focus: Max Malice", stats: {malice:5, ki:1}, ragId: "EP_23_OOZARU", ragText: "Destroying Papaya Island under the full moon breaks the spirit of humanity." },
-  { title: "Subjugate Capsule Corp", desc: "Focus: Max Infamy", stats: {infamy:5, health:1}, ragId: "EP_CAPSULE_01", ragText: "Enslaving Bulma and Dr. Briefs weaponizes global technology." },
-  { title: "Assassinate the Champions", desc: "Focus: Balanced Dark", stats: {malice:3, infamy:3}, ragId: "EP_ASSASSIN_01", ragText: "Killing Tien, Yamcha, and Krillin in secret removes all martial arts resistance." }
-];
+    // ── helpers ────────────────────────────────────────────────────
+    function unlock(el){ el.classList.remove('locked'); el.classList.add('selectable'); }
 
-// Data: Late Game Crisis (Section 5 - Alignment Specific)
-const crisisChoices = {
-  "Void Destroyer": [
-    { title: "Disintegrate Raditz", desc: "Show no mercy.", stats: {ki:2, malice:2}, ragId: "EP_VOID_1", ragText: "Total atomic destruction leaves no trace for Frieza to track." },
-    { title: "Turn Him into a Thrall", desc: "Break his mind.", stats: {infamy:3}, ragId: "EP_VOID_2", ragText: "Psychological torture establishes dominance over the Saiyan hierarchy." }
-  ],
-  "Arcane Inquisitor": [
-    { title: "Drain His Life Force", desc: "Use magic to absorb him.", stats: {health:3}, ragId: "EP_ARCANE_1", ragText: "Mystical energy siphoning bypasses traditional power levels." },
-    { title: "Reprogram His Mind", desc: "Make him serve you.", stats: {infamy:3}, ragId: "EP_ARCANE_2", ragText: "Technological/magical brainwashing secures a loyal cosmic general." }
-  ],
-  "Feral Bloodlust": [
-    { title: "Execute Him Viscerally", desc: "Pure violence.", stats: {malice:4}, ragId: "EP_FERAL_1", ragText: "A brutal public execution terrifies the remaining populace." },
-    { title: "Torture for Intel", desc: "Extract Frieza's coordinates.", stats: {infamy:2, malice:2}, ragId: "EP_FERAL_2", ragText: "Information is extracted through extreme physical trauma." }
-  ],
-  "Calculated Tyranny": [
-    { title: "Weaponize Dragon Balls", desc: "Wish for immortality.", stats: {health:4}, ragId: "EP_TYRANT_1", ragText: "Immortality completely nullifies the threat of the Saiyan invasion." },
-    { title: "Lure Frieza's Fleet", desc: "Set a planetary trap.", stats: {infamy:4}, ragId: "EP_TYRANT_2", ragText: "Earth's defenses are manipulated to destroy the incoming armada." }
-  ],
-  "Saiyan Duty": [
-    { title: "Bow to Prince Vegeta", desc: "Accept your place.", stats: {ki:2}, ragId: "EP_DUTY_1", ragText: "Reintegrating into the Saiyan hierarchy ensures survival and conquest." },
-    { title: "Negotiate Autonomy", desc: "Offer Earth's resources.", stats: {infamy:2}, ragId: "EP_DUTY_2", ragText: "Diplomatic leverage creates a unique faction within the Frieza Force." }
-  ]
-};
+    function clearStates(){
+        interactive.forEach(el => {
+            el.classList.remove('locked','selectable','committed','active','revealed',
+                'path-saiyan-active','path-feral-active','path-tyrant-active');
+            el.querySelectorAll('.committed-tag').forEach(t => t.remove());
+        });
+        document.querySelectorAll('[id^="choices-group-"],[id^="mid-bridge-group-"]')
+            .forEach(g => g.classList.remove('locked'));
+        columns.forEach(c => c.classList.remove('stage-active'));
+    }
 
-// Core Functions
-function updateStats() {
-  document.getElementById("health").textContent = stats.health;
-  document.getElementById("ki").textContent = stats.ki;
-  document.getElementById("malice").textContent = stats.malice;
-  document.getElementById("infamy").textContent = stats.infamy;
-}
+    function addTag(el, isCard){
+        const tag = document.createElement('span');
+        tag.className = 'committed-tag';
+        tag.textContent = '✓ Locked in';
+        if (isCard){ (el.querySelector('.node-title') || el).appendChild(tag); }
+        else { el.appendChild(tag); }
+    }
 
-function addStats(newStats) {
-  for (let key in newStats) {
-    if (stats[key] !== undefined) stats[key] += newStats[key];
-  }
-  updateStats();
-}
+    function markCommitted(el, isCard){
+        if (!el) return;
+        el.classList.add('committed');
+        if (state.alignment) el.classList.add('path-' + state.alignment + '-active');
+        if (!isCard) el.classList.add('active');
+        addTag(el, isCard);
+    }
 
-function scrollToEl(id) {
-  document.getElementById(id).classList.remove("hidden");
-  setTimeout(() => {
-    document.getElementById(id).scrollIntoView({ behavior: "smooth", block: "start" });
-  }, 100);
-}
+    function lockGroupsExcept(prefix, keepSuffix){
+        document.querySelectorAll('[id^="' + prefix + '"]').forEach(g => {
+            if (g.id !== prefix + keepSuffix) g.classList.add('locked');
+        });
+    }
 
-// 1. Choose Origin
-function chooseOrigin(id) {
-  const origin = origins[id];
-  addStats(origin.stats);
-  document.getElementById("s1-start").classList.add("hidden");
+    function getPathFromEl(el) {
+        if (!el) return null;
+        if (el.classList.contains('to-saiyan')) return 'saiyan';
+        if (el.classList.contains('to-feral')) return 'feral';
+        if (el.classList.contains('to-tyrant')) return 'tyrant';
+        return null;
+    }
 
-  let html = `
-    <h2>Section 2: Childhood Threat (Age 8)</h2>
-    <h3>Origin Locked: ${origin.title}</h3>
-    ${renderRAG(origin.ragId, origin.ragText)}
-    <p>Your timeline has fractured. Choose your survival strategy during your formative years.</p>
-    <div class="grid-buttons">
-  `;
+    // ── render ─────────────────────────────────────────────────────
+    function render(){
+        clearStates();
+        interactive.forEach(el => el.classList.add('locked'));
 
-  childhoodNodes[id].forEach((node, idx) => {
-    html += `
-      <button onclick='chooseChildhood(${JSON.stringify(node.stats)}, "${node.ragId}", "${node.ragText}")'>
-        ${node.title}<br><small>${node.desc}</small>
-      </button>
-    `;
-  });
-  html += `</div>`;
+        // re-apply every committed milestone
+        if (state.origin)    markCommitted(origC(state.origin), true);
+        if (state.prologue)  markCommitted(byId(state.prologue), false);
+        if (state.bridge)    markCommitted(byId(state.bridge), false);
+        if (state.alignment) markCommitted(pathC(state.alignment), true);
+        if (state.crisis)    markCommitted(byId(state.crisis), false);
+        if (state.ending)    markCommitted(endC(state.ending), true);
+        if (state.aftermath) markCommitted(aftC(state.aftermath), true);
+        interactive.forEach(el => { if (el.classList.contains('committed')) el.classList.remove('locked'); });
 
-  const s2 = document.getElementById("s2-childhood");
-  s2.innerHTML = html;
-  scrollToEl("s2-childhood");
-}
+        const s = state.stage;
+        if (columns[s]) columns[s].classList.add('stage-active');
 
-// 2. Choose Childhood Node -> Leads to Teenage Era (In-Between)
-function chooseChildhood(nodeStats, ragId, ragText) {
-  addStats(nodeStats);
-  
-  let html = `
-    <h2>Section 3: Teenage Rebellion (Age 15)</h2>
-    ${renderRAG(ragId, ragText)}
-    <p>The world is shifting. Demon King Piccolo and the Red Ribbon Army vie for control. Define your independence.</p>
-    <div class="grid-buttons">
-  `;
+        if (s === 0){
+            allOrigins.forEach(unlock);
+        } else if (s === 1){
+            lockGroupsExcept('choices-group-', state.origin);
+            byId('choices-group-' + state.origin).querySelectorAll('.choice-item').forEach(unlock);
+        } else if (s === 2){
+            lockGroupsExcept('mid-bridge-group-', state.origin);
+            byId('mid-bridge-group-' + state.origin).querySelectorAll('.choice-item').forEach(unlock);
+        } else if (s === 4){
+            // Only unlock the Late-Game Crisis group attached to the auto-selected Alignment
+            document.querySelectorAll('.end-bridge-group').forEach(g => g.classList.add('locked'));
+            const activeGroup = byId('end-bridge-' + state.alignment);
+            if (activeGroup) {
+                activeGroup.classList.remove('locked');
+                activeGroup.querySelectorAll('.choice-item').forEach(unlock);
+            }
+        } else if (s === 6){
+            if (state.aftermath) aftC(state.aftermath).classList.add('revealed');
+        }
 
-  teenageChoices.forEach(choice => {
-    html += `
-      <button onclick='chooseTeenage(${JSON.stringify(choice.stats)}, "${choice.ragId}", "${choice.ragText}")'>
-        ${choice.title}<br><small>${choice.desc}</small>
-      </button>
-    `;
-  });
-  html += `</div>`;
+        renderRail();
+        hintEl.innerHTML = HINTS[state.stage];
+        renderSummary();
+        requestAnimationFrame(drawLines);
+    }
 
-  const s3 = document.getElementById("s3-teenage");
-  s3.innerHTML = html;
-  scrollToEl("s3-teenage");
-}
+    // ── selection ──────────────────────────────────────────────────
+    function choose(el){
+        if (!el.classList.contains('selectable')) return;
+        switch (state.stage){
+            case 0: 
+                state.origin    = +el.id.split('-')[1];            
+                state.stage = 1; 
+                break;
+            case 1: 
+                state.prologue  = el.id;                           
+                state.stage = 2; 
+                break;
+            case 2: 
+                state.bridge = el.id;                           
+                
+                // AUTO-DETERMINE ALIGNMENT (Stage 3) based on Bridge Selection taking narrative precedence
+                let p2 = getPathFromEl(el);
+                state.alignment = p2;       
+                
+                // Skip directly to Crisis selection
+                state.stage = 4; 
+                break;
+            case 3: break; // Stage is auto-skipped 
+            case 4: 
+                state.crisis = el.id;                           
+                
+                // AUTO-DETERMINE ENDING (Stage 5) AND AFTERMATH (Stage 6) 
+                let p3 = getPathFromEl(el);
+                state.ending = (p3 === 'saiyan') ? 1 : (p3 === 'feral') ? 2 : 3;
+                state.aftermath = ENDING_TO_AFTERMATH[state.ending]; 
+                
+                // Jump to the end
+                state.stage = 6; 
+                break;
+            case 5: break; // Stage is auto-skipped
+            default: return;
+        }
+        render();
+    }
+    interactive.forEach(el => el.addEventListener('click', () => choose(el)));
 
-// 3. Choose Teenage -> Leads to World Tournament
-function chooseTeenage(nodeStats, ragId, ragText) {
-  addStats(nodeStats);
-  
-  let html = `
-    <h2>Section 4: World Tournament Era (Age 19)</h2>
-    ${renderRAG(ragId, ragText)}
-    <p>Earth's greatest martial artists have gathered. It is time to make a permanent statement on the global stage.</p>
-    <div class="grid-buttons">
-  `;
+    function gotoStage(target){
+        // Kick them back to the decision-making step if they click an auto-skipped stage
+        if (target === 3) target = 2;
+        if (target === 5) target = 4;
+        
+        for (let i = target; i < KEYS.length; i++) state[KEYS[i]] = null;
+        state.stage = target;
+        render();
+    }
+    document.getElementById('resetBtn').addEventListener('click', () => gotoStage(0));
 
-  tournamentChoices.forEach(choice => {
-    html += `
-      <button onclick='chooseTournament(${JSON.stringify(choice.stats)}, "${choice.ragId}", "${choice.ragText}")'>
-        ${choice.title}<br><small>${choice.desc}</small>
-      </button>
-    `;
-  });
-  html += `</div>`;
+    // ── progress rail ──────────────────────────────────────────────
+    function renderRail(){
+        railEl.innerHTML = '';
+        RAIL_LABELS.forEach((lbl, i) => {
+            if (i){
+                const c = document.createElement('div');
+                c.className = 'rail-connector' + (i <= state.stage ? ' done' : '');
+                railEl.appendChild(c);
+            }
+            const done = i < state.stage, cur = i === state.stage;
+            const step = document.createElement('div');
+            step.className = 'rail-step' + (done ? ' done' : '') + (cur ? ' current' : '');
+            step.innerHTML = '<span class="dot">' + (done ? '✓' : (i + 1)) +
+                             '</span><span class="lbl">' + lbl + '</span>';
+            if (done) step.addEventListener('click', () => gotoStage(i));
+            railEl.appendChild(step);
+        });
+    }
 
-  const s4 = document.getElementById("s4-tournament");
-  s4.innerHTML = html;
-  scrollToEl("s4-tournament");
-}
+    // ── trajectory summary ─────────────────────────────────────────
+    function shortLabel(el){
+        if (!el) return '';
+        const strong = el.querySelector('strong');
+        if (strong) return strong.textContent.trim().replace(/^Choice [AB]:\s*/, '');
+        const t = el.querySelector('.node-title');
+        return t ? t.childNodes[0].textContent.trim() : el.textContent.trim();
+    }
+    function renderSummary(){
+        const box = document.getElementById('summary');
+        if (state.stage < 6 || !state.aftermath){ box.classList.remove('show'); return; }
+        const cls = state.alignment;
+        const items = [
+            ['Origin',    shortLabel(origC(state.origin))],
+            ['Prologue',  shortLabel(byId(state.prologue))],
+            ['Bridge',    shortLabel(byId(state.bridge))],
+            ['Alignment', shortLabel(pathC(state.alignment))],
+            ['Crisis',    shortLabel(byId(state.crisis))],
+            ['Closure',   shortLabel(endC(state.ending))],
+            ['Aftermath', shortLabel(aftC(state.aftermath))]
+        ];
+        document.getElementById('summaryChain').innerHTML = items.map((it, i) =>
+            (i ? '<span class="arrow">→</span>' : '') +
+            '<span class="step-pill ' + cls + '"><span class="k">' + it[0] +
+            '</span><span class="v">' + it[1] + '</span></span>'
+        ).join('');
+        box.classList.add('show');
+    }
 
-// 4. Choose Tournament -> Calculates Alignment -> Late Game Crisis
-function chooseTournament(nodeStats, ragId, ragText) {
-  addStats(nodeStats);
-  
-  // Alignment Logic
-  if (stats.malice >= 7 && stats.ki >= 7) {
-     currentAlignment = "Void Destroyer";
-  } else if (stats.infamy >= 7 && stats.health >= 5) {
-     currentAlignment = "Arcane Inquisitor";
-  } else if (stats.malice >= stats.ki && stats.malice >= stats.infamy) {
-     currentAlignment = "Feral Bloodlust";
-  } else if (stats.infamy >= stats.ki && stats.infamy >= stats.malice) {
-     currentAlignment = "Calculated Tyranny";
-  } else {
-     currentAlignment = "Saiyan Duty";
-  }
+    // ── connection lines (committed chain only) ────────────────────
+    function cx(el, wr){
+        const r = el.getBoundingClientRect();
+        return { left: r.left - wr.left, right: r.right - wr.left, mid: (r.top + r.bottom) / 2 - wr.top };
+    }
+    function arc(x1, y1, x2, y2, colorClass){
+        const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const k = Math.max(Math.abs(x2 - x1) * 0.45, 28);
+        p.setAttribute('d', `M${x1} ${y1} C${x1 + k} ${y1},${x2 - k} ${y2},${x2} ${y2}`);
+        p.setAttribute('class', 'connection-line committed-line line-' + colorClass);
+        svg.appendChild(p);
+    }
+    function drawLines(){
+        svg.innerHTML = '';
+        const wr = workspace.getBoundingClientRect();
+        svg.setAttribute('width', wr.width);
+        svg.setAttribute('height', wr.height);
 
-  document.getElementById("s-alignment").innerHTML = `
-    <h2>System Override: Alignment Locked</h2>
-    ${renderRAG(ragId, ragText)}
-    <h3 style="color: #66ccff; font-size: 1.5rem;">Path of the ${currentAlignment}</h3>
-    <p>Your cumulative actions have permanently defined Kakarot's psychological archetype.</p>
-  `;
-  scrollToEl("s-alignment");
+        const chain = [];
+        if (state.origin)    chain.push(origC(state.origin));
+        if (state.prologue)  chain.push(byId(state.prologue));
+        if (state.bridge)    chain.push(byId(state.bridge));
+        if (state.alignment) chain.push(pathC(state.alignment));
+        if (state.crisis)    chain.push(byId(state.crisis));
+        if (state.ending)    chain.push(endC(state.ending));
+        if (state.aftermath) chain.push(aftC(state.aftermath));
 
-  let html = `
-    <h2>Section 5: Late-Game Crisis (Age 24)</h2>
-    <p>A space pod crashes on Earth. Your biological brother Raditz emerges, scanning for power levels. Based on your path, decide his fate.</p>
-    <div class="grid-buttons">
-  `;
+        const color = state.alignment || 'pending';
+        for (let i = 0; i < chain.length - 1; i++){
+            const a = cx(chain[i], wr), b = cx(chain[i + 1], wr);
+            arc(a.right, a.mid, b.left, b.mid, color);
+        }
+    }
 
-  crisisChoices[currentAlignment].forEach(choice => {
-    html += `
-      <button onclick='chooseCrisis(${JSON.stringify(choice.stats)}, "${choice.ragId}", "${choice.ragText}")'>
-        ${choice.title}<br><small>${choice.desc}</small>
-      </button>
-    `;
-  });
-  html += `</div>`;
-
-  const s5 = document.getElementById("s5-crisis");
-  s5.innerHTML = html;
-  scrollToEl("s5-crisis");
-}
-
-// 5. Choose Crisis -> Endings
-function chooseCrisis(nodeStats, ragId, ragText) {
-  addStats(nodeStats);
-
-  let title = "";
-  let desc = "";
-  let aftermath = "";
-
-  switch (currentAlignment) {
-    case "Saiyan Duty":
-      title = "Ending 1: The Loyal Vanguard";
-      desc = "Kakarot completes his original Saiyan mission. He joins Raditz and enters the Frieza Force hierarchy.";
-      aftermath = "Earth becomes Kakarot's first trophy conquest as he rises through the ranks.";
-      break;
-    case "Feral Bloodlust":
-      title = "Ending 2: The Apex Predator";
-      desc = "Kakarot rejects all command. He slaughters Raditz, claiming Earth as his personal feral hunting ground.";
-      aftermath = "Frieza's forces mark Earth as a hostile, quarantined anomaly. The deathworld awaits Vegeta.";
-      break;
-    case "Calculated Tyranny":
-      title = "Ending 3: The God-King of Earth";
-      desc = "Kakarot optimizes human global assets and uses the Dragon Balls to become a sovereign planetary deity.";
-      aftermath = "Earth becomes a high-tech fortress-world completely immune to Frieza's control.";
-      break;
-    case "Void Destroyer":
-      title = "Ending 4: The Cosmic Usurper";
-      desc = "Fueled by unparalleled malice and ki, Kakarot breaks the boundaries of his universe, seeking to obliterate the gods themselves.";
-      aftermath = "Even the Gods of Destruction take notice. Universal annihilation protocols are initiated.";
-      break;
-    case "Arcane Inquisitor":
-      title = "Ending 5: The Arcane Emperor";
-      desc = "Fusing dark magic, technology, and Saiyan blood, Kakarot establishes a shadow syndicate that manipulates the galaxy from afar.";
-      aftermath = "The Galactic Patrol is corrupted from the inside. Kakarot rules the universe via proxy.";
-      break;
-  }
-
-  document.getElementById("s6-ending").innerHTML = `
-    <h2>Section 6: Endgame Closure</h2>
-    ${renderRAG(ragId, ragText)}
-    <h3 style="color: #66ccff; font-size: 1.8rem; margin-top: 15px;">${title}</h3>
-    <p>${desc}</p>
-    <div style="border-top: 1px dashed #66ccff; margin: 20px 0; padding-top: 20px;">
-      <h3 style="color: #ffb000;">7 · Cosmic Aftermath</h3>
-      <p style="font-style: italic;">${aftermath}</p>
-    </div>
-  `;
-  
-  scrollToEl("s6-ending");
-}
-
-function resetGame() {
-  stats = { health: 0, ki: 0, malice: 0, infamy: 0 };
-  currentAlignment = "";
-  updateStats();
-
-  const sections = ["s2-childhood", "s3-teenage", "s4-tournament", "s-alignment", "s5-crisis", "s6-ending"];
-  sections.forEach(id => {
-    const el = document.getElementById(id);
-    el.classList.add("hidden");
-    el.innerHTML = "";
-  });
-
-  document.getElementById("s1-start").classList.remove("hidden");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-// Init
-updateStats();
+    render();
+    window.addEventListener('resize', () => requestAnimationFrame(drawLines));
+})();
 </script>
 
+<script>
+(function() {
+    const chatBox = document.getElementById('bot-chat');
+    const input = document.getElementById('bot-input');
+    const sendBtn = document.getElementById('bot-send');
+    const status = document.getElementById('bot-status');
+
+    // Insert your Google AI Studio API key here for local testing
+    const API_KEY = "AQ.Ab8RN6KFOC63S2hicevDLrWO-fiimh1M8JpmYRrPRqUQeuwaLw"; 
+    
+    // Using Gemini 1.5 Flash for rapid text generation
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+    // System instruction defines the AI's persona and baseline knowledge
+    const SYSTEM_PROMPT = "You are an AI Scouter analyzing an alternate Dragon Ball timeline where Kakarot never bumped his head and remained a ruthless Saiyan conqueror. Keep answers concise, gritty, and lore-accurate to this specific timeline.";
+
+    function addMessage(text, sender) {
+        const msg = document.createElement('div');
+        msg.className = `msg ${sender}`;
+        // Render simple line breaks from the LLM
+        msg.innerHTML = text.replace(/\n/g, '<br>'); 
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function processInput() {
+        const text = input.value.trim();
+        if (!text) return;
+        
+        addMessage(text, 'user');
+        input.value = '';
+        input.disabled = true;
+        sendBtn.disabled = true;
+        status.textContent = "Querying API...";
+        status.style.color = "var(--accent-orange)";
+
+        const payload = {
+            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents: [{ role: "user", parts: [{ text: text }] }]
+        };
+
+        try {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            
+            const data = await response.json();
+            const aiText = data.candidates[0].content.parts[0].text;
+            addMessage(aiText, 'bot');
+            
+        } catch (error) {
+            console.error("API Error:", error);
+            addMessage("Transmission failed. Interference detected in the API uplink.", 'bot');
+        } finally {
+            input.disabled = false;
+            sendBtn.disabled = false;
+            status.textContent = "Online";
+            status.style.color = "var(--accent-green)";
+            input.focus();
+        }
+    }
+
+    // Enable UI on load
+    status.textContent = "Online";
+    status.style.color = "var(--accent-green)";
+    input.disabled = false;
+    sendBtn.disabled = false;
+
+    sendBtn.addEventListener('click', processInput);
+    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') processInput(); });
+})();
+</script>
 </body>
 </html>
