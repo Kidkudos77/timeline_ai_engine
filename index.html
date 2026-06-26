@@ -935,46 +935,31 @@ const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    async function processInput() {
-        const text = input.value.trim();
-        if (!text) return;
-        
-        addMessage(text, 'user');
-        input.value = '';
-        input.disabled = true;
-        sendBtn.disabled = true;
-        status.textContent = "Querying API...";
-        status.style.color = "var(--accent-orange)";
+ async function processInput(userMessage) {
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: userMessage }] }]
+      })
+    });
 
-        const payload = {
-            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents: [{ role: "user", parts: [{ text: text }] }]
-        };
-
-        try {
-            const response = await fetch(API_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-            
-            const data = await response.json();
-            const aiText = data.candidates[0].content.parts[0].text;
-            addMessage(aiText, 'bot');
-            
-        } catch (error) {
-            console.error("API Error:", error);
-            addMessage("Transmission failed. Interference detected in the API uplink.", 'bot');
-        } finally {
-            input.disabled = false;
-            sendBtn.disabled = false;
-            status.textContent = "Online";
-            status.style.color = "var(--accent-green)";
-            input.focus();
-        }
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`HTTP Error ${response.status}: ${errText}`);
     }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No response received.";
+
+  } catch (err) {
+    console.error("API Error:", err);
+    return "Transmission failed. Interference detected in the API uplink.";
+  }
+}
 
     // Enable UI on load
     status.textContent = "Online";
