@@ -919,10 +919,6 @@
     // Insert your Google AI Studio API key here for local testing
     const API_KEY = "AQ.Ab8RN6KFOC63S2hicevDLrWO-fiimh1M8JpmYRrPRqUQeuwaLw"; 
     
-    // Using Gemini 1.5 Flash for rapid text generation
-    // Change this line in your script:
-const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
-
     // System instruction defines the AI's persona and baseline knowledge
     const SYSTEM_PROMPT = "You are an AI Scouter analyzing an alternate Dragon Ball timeline where Kakarot never bumped his head and remained a ruthless Saiyan conqueror. Keep answers concise, gritty, and lore-accurate to this specific timeline.";
 
@@ -943,7 +939,8 @@ const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: userMessage }] }]
+        system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ role: 'user', parts: [{ text: userMessage }] }]
       })
     });
 
@@ -967,8 +964,26 @@ const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-
     input.disabled = false;
     sendBtn.disabled = false;
 
-    sendBtn.addEventListener('click', processInput);
-    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') processInput(); });
+    async function handleSend() {
+        const userMessage = input.value.trim();
+        if (!userMessage) return;
+        input.value = '';
+        addMessage(userMessage, 'user');
+        sendBtn.disabled = true;
+        input.disabled = true;
+        status.textContent = 'Scanning...';
+        status.style.color = 'var(--accent-orange)';
+        const reply = await processInput(userMessage);
+        addMessage(reply, 'bot');
+        sendBtn.disabled = false;
+        input.disabled = false;
+        input.focus();
+        status.textContent = 'Online';
+        status.style.color = 'var(--accent-green)';
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
 })();
 </script>
 </body>
