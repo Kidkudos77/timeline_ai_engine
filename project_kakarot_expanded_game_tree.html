@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dragon Ball Z: Project Kakarot - Expanded Game Tree</title>
+
+<style>
+  body {
+    margin: 0;
+    font-family: "Courier New", monospace;
+    background: #17110c;
+    color: #fff3c4;
+    padding-bottom: 50px;
+  }
+
+  header {
+    text-align: center;
+    padding: 35px 20px;
+    background: linear-gradient(135deg, #ffb000, #d84315);
+    color: #1b1005;
+    border-bottom: 6px solid #ffe066;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 2.4rem;
+    text-shadow: 2px 2px #fff3c4;
+    text-transform: uppercase;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 25px;
+  }
+
+  .panel {
+    background: #24170f;
+    border: 4px solid #ffb000;
+    box-shadow: 6px 6px 0 #000;
+    padding: 25px;
+    margin-bottom: 35px;
+    border-radius: 10px;
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  h2 {
+    color: #ffcc33;
+    border-bottom: 2px solid #ffcc33;
+    padding-bottom: 8px;
+    margin-top: 0;
+  }
+
+  h3 {
+    color: #ffdd66;
+    margin-bottom: 10px;
+  }
+
+  button {
+    display: block;
+    width: 100%;
+    margin: 12px 0;
+    padding: 14px;
+    font-family: "Courier New", monospace;
+    font-size: 1rem;
+    font-weight: bold;
+    background: #ffb000;
+    color: #1b1005;
+    border: 3px solid #fff3c4;
+    box-shadow: 4px 4px 0 #000;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  button:hover {
+    background: #ffe066;
+    transform: translateY(-2px);
+    box-shadow: 6px 6px 0 #000;
+  }
+
+  .grid-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  /* Stat Bar */
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 25px;
+    position: sticky;
+    top: 10px;
+    z-index: 100;
+  }
+
+  .stat {
+    background: #000;
+    border: 3px solid #ffb000;
+    padding: 12px;
+    flex: 1;
+    min-width: 140px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    box-shadow: 4px 4px 0 #000;
+  }
+
+  .val-health { color: #4ade80; }
+  .val-ki { color: #38bdf8; }
+  .val-malice { color: #f87171; }
+  .val-infamy { color: #c084fc; }
+
+  .choice-card {
+    background: #332014;
+    padding: 20px;
+    border: 3px solid #8b4513;
+    margin: 15px 0;
+    border-radius: 8px;
+  }
+
+  .ending {
+    background: #0e1a2b;
+    border-color: #66ccff;
+  }
+
+  .reset {
+    background: #b71c1c;
+    color: white;
+    border-color: #ffaaaa;
+  }
+
+  .reset:hover {
+    background: #d32f2f;
+  }
+
+  /* RAG Engine UI Components */
+  .rag-box {
+    background: #021a02;
+    border: 1px solid #00ff44;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 15px;
+    color: #33ff66;
+    box-shadow: inset 0 0 10px #000;
+  }
+
+  .rag-title {
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rag-title::before {
+    content: "";
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: #00ff44;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,68,0.7); }
+    70% { opacity: 0.5; box-shadow: 0 0 0 6px rgba(0,255,68,0); }
+    100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,255,68,0); }
+  }
+
+  .rag-text {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    line-height: 1.4;
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Project Kakarot</h1>
+  <p>Expanded 6-Stage Alternate Timeline AI Simulator</p>
+</header>
+
+<div class="container">
+
+  <div class="stats">
+    <div class="stat">Health: <span id="health" class="val-health">0</span></div>
+    <div class="stat">Ki: <span id="ki" class="val-ki">0</span></div>
+    <div class="stat">Malice: <span id="malice" class="val-malice">0</span></div>
+    <div class="stat">Infamy: <span id="infamy" class="val-infamy">0</span></div>
+  </div>
+
+  <button class="reset" onclick="resetGame()">[ ↻ REBOOT ENGINE ]</button>
+
+  <!-- SECTION 1: PROLOGUE ORIGINS -->
+  <section id="s1-start" class="panel">
+    <h2>Section 1: Prologue Origins (Age 0)</h2>
+    <p>Select the coordinates of Kakarot's pod crash. This dictates his starting trajectory.</p>
+    <div class="grid-buttons">
+      <button onclick="chooseOrigin(1)">1. The Mountain Feral</button>
+      <button onclick="chooseOrigin(2)">2. Emperor Pilaf's Enforcer</button>
+      <button onclick="chooseOrigin(3)">3. Red Ribbon Vanguard</button>
+      <button onclick="chooseOrigin(4)">4. Crane School Assassin</button>
+      <button onclick="chooseOrigin(5)">5. Turtle School Defector</button>
+      <button onclick="chooseOrigin(6)">6. Demon Clan Initiate</button>
+      <button onclick="chooseOrigin(7)">7. Kami's Failed Experiment</button>
+      <button onclick="chooseOrigin(8)">8. Galactic Patrol Prisoner</button>
+      <button onclick="chooseOrigin(9)">9. Tuffle Parasite Host</button>
+    </div>
+  </section>
+
+  <!-- SECTION 2: CHILDHOOD NODES -->
+  <section id="s2-childhood" class="panel hidden"></section>
+
+  <!-- SECTION 3: TEENAGE IN-BETWEEN -->
+  <section id="s3-teenage" class="panel hidden"></section>
+
+  <!-- SECTION 4: WORLD TOURNAMENT (MID-GAME BRIDGE) -->
+  <section id="s4-tournament" class="panel hidden"></section>
+
+  <!-- ALIGNMENT CHECK -->
+  <section id="s-alignment" class="panel hidden"></section>
+
+  <!-- SECTION 5: LATE GAME CRISIS -->
+  <section id="s5-crisis" class="panel hidden"></section>
+
+  <!-- SECTION 6: ENDING & AFTERMATH -->
+  <section id="s6-ending" class="panel ending hidden"></section>
+
+</div>
+
+<script>
+let stats = { health: 0, ki: 0, malice: 0, infamy: 0 };
+let currentAlignment = "";
+
+// Helper to generate the RAG UI element
+function renderRAG(ragId, ragText) {
+  return `
+    <div class="rag-box">
+      <div class="rag-title">System RAG Sync: ${ragId}</div>
+      <div class="rag-text">${ragText}</div>
+    </div>
+  `;
+}
+
+// Data: Origins (Section 1)
+const origins = {
+  1: { title: "The Mountain Feral", ragId: "EP_02_GOHAN", ragText: "Without head trauma, Saiyan aggressive instincts override human empathy.", stats: {ki:1, malice:2} },
+  2: { title: "Emperor Pilaf's Enforcer", ragId: "EP_04_PILAF", ragText: "Exploiting alien strength for petty global domination yields volatile results.", stats: {health:1, infamy:2} },
+  3: { title: "Red Ribbon Vanguard", ragId: "EP_15_GERO", ragText: "Cybernetic enhancement protocols override biological limitations.", stats: {health:2, ki:1} },
+  4: { title: "Crane School Assassin", ragId: "EP_22_TIEN", ragText: "Lethal martial arts combined with Saiyan biology creates a perfect killer.", stats: {ki:2, infamy:1} },
+  5: { title: "Turtle School Defector", ragId: "EP_23_TURTLE", ragText: "Rejection of peaceful teachings triggers violent ideological snaps.", stats: {malice:2, infamy:1} },
+  6: { title: "Demon Clan Initiate", ragId: "EP_44_PICCOLO", ragText: "Exposure to demonic ki permanently mutates the Saiyan energy signature.", stats: {ki:2, malice:1} },
+  7: { title: "Kami's Failed Experiment", ragId: "EP_60_KAMI", ragText: "Divine suppression magic ultimately shatters under Oozaru pressure.", stats: {health:2, malice:1} },
+  8: { title: "Galactic Patrol Prisoner", ragId: "EP_JACO_01", ragText: "Space imprisonment forces the subject to adapt to cosmic-level threats early.", stats: {ki:1, health:2} },
+  9: { title: "Tuffle Parasite Host", ragId: "EP_BABY_01", ragText: "A symbiotic pathogen alters brain chemistry, combining vengeance with Saiyan power.", stats: {infamy:2, malice:1} }
+};
+
+// Data: Childhood Choices (Section 2 - Unique to Origin)
+const childhoodNodes = {
+  1: [
+    { title: "Raid Human Villages", desc: "+Infamy, +Malice", stats: {infamy:2, malice:2}, ragId: "DB_VILLAGE", ragText: "Sustained terror tactics build early notoriety." },
+    { title: "Hunt Dinosaur Apexes", desc: "+Ki, +Health", stats: {ki:2, health:2}, ragId: "DB_WILD", ragText: "Extreme biological stress forces rapid zenkai boosts." },
+    { title: "Tap into Moon Magic", desc: "++Malice, +Ki", stats: {malice:3, ki:1}, ragId: "DB_OOZARU", ragText: "Early exposure to blutz waves destabilizes the mind." }
+  ],
+  2: [
+    { title: "Serve as Brute Muscle", desc: "++Ki", stats: {ki:3, health:1}, ragId: "DB_BRUTE", ragText: "Physical enforcement operations." },
+    { title: "Subvert Pilaf's Empire", desc: "++Infamy", stats: {infamy:3, malice:1}, ragId: "DB_SUBVERT", ragText: "Learning political manipulation." },
+    { title: "Steal the Dragon Radar", desc: "+Health, +Infamy", stats: {health:2, infamy:2}, ragId: "DB_RADAR", ragText: "Acquiring advanced tracking technology." }
+  ],
+  3: [
+    { title: "Accept Cybernetics", desc: "++Health", stats: {health:4}, ragId: "DB_CYBER", ragText: "Sub-dermal armor plating installed." },
+    { title: "Lead Frontline Purges", desc: "++Malice", stats: {malice:3, infamy:1}, ragId: "DB_PURGE", ragText: "Total annihilation of resistance." },
+    { title: "Hack RR Database", desc: "++Infamy", stats: {infamy:4}, ragId: "DB_HACK", ragText: "Acquiring global intelligence." }
+  ],
+  4: [
+    { title: "Master Lethal Ki", desc: "++Ki", stats: {ki:4}, ragId: "DB_DODON", ragText: "Perfecting the Dodon Ray." },
+    { title: "Shadow Assassinations", desc: "++Infamy", stats: {infamy:3, health:1}, ragId: "DB_SHADOW", ragText: "Quietly eliminating global leaders." },
+    { title: "Betray Master Shen", desc: "++Malice", stats: {malice:4}, ragId: "DB_BETRAY", ragText: "Breaking the master-student bond with violence." }
+  ],
+  5: [
+    { title: "Hunt Down Masters", desc: "++Malice", stats: {malice:3, ki:1}, ragId: "DB_HUNT", ragText: "Killing martial arts legends for sport." },
+    { title: "Found Dark Dojo", desc: "++Infamy", stats: {infamy:4}, ragId: "DB_DOJO", ragText: "Selling weaponized training." },
+    { title: "Steal the Nimbus", desc: "++Health", stats: {health:3, infamy:1}, ragId: "DB_NIMBUS", ragText: "Corrupting divine artifacts." }
+  ],
+  6: [
+    { title: "Exterminate Lineages", desc: "++Malice", stats: {malice:4}, ragId: "DB_EXTERMINATE", ragText: "Hunting heroes under Piccolo's flag." },
+    { title: "Siphon Demon Ki", desc: "++Ki", stats: {ki:3, health:1}, ragId: "DB_SIPHON", ragText: "Draining demon reserves." },
+    { title: "Usurp Piccolo Early", desc: "++Infamy", stats: {infamy:3, malice:1}, ragId: "DB_USURP", ragText: "Planning a coup against the Demon King." }
+  ],
+  7: [
+    { title: "Sanctuary Rebellion", desc: "++Malice", stats: {malice:3, ki:1}, ragId: "DB_REBELLION", ragText: "Destroying the Lookout's divine order." },
+    { title: "Plunder Artifacts", desc: "++Health", stats: {health:3, infamy:1}, ragId: "DB_PLUNDER", ragText: "Stealing mystical treasures." },
+    { title: "Corrupt the Dragon Balls", desc: "++Infamy", stats: {infamy:4}, ragId: "DB_CORRUPT", ragText: "Tainting Shenron's magic." }
+  ],
+  8: [
+    { title: "Hijack the Cruiser", desc: "++Infamy", stats: {infamy:3, ki:1}, ragId: "DB_HIJACK", ragText: "Taking control of a Galactic Patrol ship." },
+    { title: "Fake Loyalty", desc: "++Health", stats: {health:4}, ragId: "DB_FAKE", ragText: "Using their resources to survive." },
+    { title: "Eject into Space", desc: "++Malice", stats: {malice:3, health:1}, ragId: "DB_EJECT", ragText: "Surviving in the vacuum out of pure rage." }
+  ],
+  9: [
+    { title: "Symbiotic Merge", desc: "++Ki", stats: {ki:4}, ragId: "DB_MERGE", ragText: "Fusing Tuffle intellect with Saiyan brawn." },
+    { title: "Suppress Parasite", desc: "++Health", stats: {health:3, infamy:1}, ragId: "DB_SUPPRESS", ragText: "Fighting for mental control." },
+    { title: "Infect Wildlife", desc: "++Malice", stats: {malice:4}, ragId: "DB_INFECT", ragText: "Spreading the parasite to rule the ecosystem." }
+  ]
+};
+
+// Data: Teenage In-Between (Section 3 - Independent Universal Choices)
+const teenageChoices = [
+  { title: "Decapitate Demon King Piccolo", desc: "Focus: Ki & Malice", stats: {ki:3, malice:3}, ragId: "EP_44_PICCOLO", ragText: "Consuming the dark heart of a global threat permanently alters energy signatures." },
+  { title: "Broker a Sovereign Pact", desc: "Focus: Infamy & Health", stats: {infamy:4, health:2}, ragId: "EP_45_PACT", ragText: "Dividing Earth's populations politically builds immense planetary influence." },
+  { title: "Raid the Red Ribbon Vault", desc: "Focus: Health & Ki", stats: {health:3, ki:3}, ragId: "EP_15_GERO", ragText: "Stealing cybernetic enhancements provides massive technological advantages." }
+];
+
+// Data: World Tournament Bridge (Section 4 - Universal Mid-Game)
+const tournamentChoices = [
+  { title: "Unleash the Great Ape", desc: "Focus: Max Malice", stats: {malice:5, ki:1}, ragId: "EP_23_OOZARU", ragText: "Destroying Papaya Island under the full moon breaks the spirit of humanity." },
+  { title: "Subjugate Capsule Corp", desc: "Focus: Max Infamy", stats: {infamy:5, health:1}, ragId: "EP_CAPSULE_01", ragText: "Enslaving Bulma and Dr. Briefs weaponizes global technology." },
+  { title: "Assassinate the Champions", desc: "Focus: Balanced Dark", stats: {malice:3, infamy:3}, ragId: "EP_ASSASSIN_01", ragText: "Killing Tien, Yamcha, and Krillin in secret removes all martial arts resistance." }
+];
+
+// Data: Late Game Crisis (Section 5 - Alignment Specific)
+const crisisChoices = {
+  "Void Destroyer": [
+    { title: "Disintegrate Raditz", desc: "Show no mercy.", stats: {ki:2, malice:2}, ragId: "EP_VOID_1", ragText: "Total atomic destruction leaves no trace for Frieza to track." },
+    { title: "Turn Him into a Thrall", desc: "Break his mind.", stats: {infamy:3}, ragId: "EP_VOID_2", ragText: "Psychological torture establishes dominance over the Saiyan hierarchy." }
+  ],
+  "Arcane Inquisitor": [
+    { title: "Drain His Life Force", desc: "Use magic to absorb him.", stats: {health:3}, ragId: "EP_ARCANE_1", ragText: "Mystical energy siphoning bypasses traditional power levels." },
+    { title: "Reprogram His Mind", desc: "Make him serve you.", stats: {infamy:3}, ragId: "EP_ARCANE_2", ragText: "Technological/magical brainwashing secures a loyal cosmic general." }
+  ],
+  "Feral Bloodlust": [
+    { title: "Execute Him Viscerally", desc: "Pure violence.", stats: {malice:4}, ragId: "EP_FERAL_1", ragText: "A brutal public execution terrifies the remaining populace." },
+    { title: "Torture for Intel", desc: "Extract Frieza's coordinates.", stats: {infamy:2, malice:2}, ragId: "EP_FERAL_2", ragText: "Information is extracted through extreme physical trauma." }
+  ],
+  "Calculated Tyranny": [
+    { title: "Weaponize Dragon Balls", desc: "Wish for immortality.", stats: {health:4}, ragId: "EP_TYRANT_1", ragText: "Immortality completely nullifies the threat of the Saiyan invasion." },
+    { title: "Lure Frieza's Fleet", desc: "Set a planetary trap.", stats: {infamy:4}, ragId: "EP_TYRANT_2", ragText: "Earth's defenses are manipulated to destroy the incoming armada." }
+  ],
+  "Saiyan Duty": [
+    { title: "Bow to Prince Vegeta", desc: "Accept your place.", stats: {ki:2}, ragId: "EP_DUTY_1", ragText: "Reintegrating into the Saiyan hierarchy ensures survival and conquest." },
+    { title: "Negotiate Autonomy", desc: "Offer Earth's resources.", stats: {infamy:2}, ragId: "EP_DUTY_2", ragText: "Diplomatic leverage creates a unique faction within the Frieza Force." }
+  ]
+};
+
+// Core Functions
+function updateStats() {
+  document.getElementById("health").textContent = stats.health;
+  document.getElementById("ki").textContent = stats.ki;
+  document.getElementById("malice").textContent = stats.malice;
+  document.getElementById("infamy").textContent = stats.infamy;
+}
+
+function addStats(newStats) {
+  for (let key in newStats) {
+    if (stats[key] !== undefined) stats[key] += newStats[key];
+  }
+  updateStats();
+}
+
+function scrollToEl(id) {
+  document.getElementById(id).classList.remove("hidden");
+  setTimeout(() => {
+    document.getElementById(id).scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 100);
+}
+
+// 1. Choose Origin
+function chooseOrigin(id) {
+  const origin = origins[id];
+  addStats(origin.stats);
+  document.getElementById("s1-start").classList.add("hidden");
+
+  let html = `
+    <h2>Section 2: Childhood Threat (Age 8)</h2>
+    <h3>Origin Locked: ${origin.title}</h3>
+    ${renderRAG(origin.ragId, origin.ragText)}
+    <p>Your timeline has fractured. Choose your survival strategy during your formative years.</p>
+    <div class="grid-buttons">
+  `;
+
+  childhoodNodes[id].forEach((node, idx) => {
+    html += `
+      <button onclick='chooseChildhood(${JSON.stringify(node.stats)}, "${node.ragId}", "${node.ragText}")'>
+        ${node.title}<br><small>${node.desc}</small>
+      </button>
+    `;
+  });
+  html += `</div>`;
+
+  const s2 = document.getElementById("s2-childhood");
+  s2.innerHTML = html;
+  scrollToEl("s2-childhood");
+}
+
+// 2. Choose Childhood Node -> Leads to Teenage Era (In-Between)
+function chooseChildhood(nodeStats, ragId, ragText) {
+  addStats(nodeStats);
+  
+  let html = `
+    <h2>Section 3: Teenage Rebellion (Age 15)</h2>
+    ${renderRAG(ragId, ragText)}
+    <p>The world is shifting. Demon King Piccolo and the Red Ribbon Army vie for control. Define your independence.</p>
+    <div class="grid-buttons">
+  `;
+
+  teenageChoices.forEach(choice => {
+    html += `
+      <button onclick='chooseTeenage(${JSON.stringify(choice.stats)}, "${choice.ragId}", "${choice.ragText}")'>
+        ${choice.title}<br><small>${choice.desc}</small>
+      </button>
+    `;
+  });
+  html += `</div>`;
+
+  const s3 = document.getElementById("s3-teenage");
+  s3.innerHTML = html;
+  scrollToEl("s3-teenage");
+}
+
+// 3. Choose Teenage -> Leads to World Tournament
+function chooseTeenage(nodeStats, ragId, ragText) {
+  addStats(nodeStats);
+  
+  let html = `
+    <h2>Section 4: World Tournament Era (Age 19)</h2>
+    ${renderRAG(ragId, ragText)}
+    <p>Earth's greatest martial artists have gathered. It is time to make a permanent statement on the global stage.</p>
+    <div class="grid-buttons">
+  `;
+
+  tournamentChoices.forEach(choice => {
+    html += `
+      <button onclick='chooseTournament(${JSON.stringify(choice.stats)}, "${choice.ragId}", "${choice.ragText}")'>
+        ${choice.title}<br><small>${choice.desc}</small>
+      </button>
+    `;
+  });
+  html += `</div>`;
+
+  const s4 = document.getElementById("s4-tournament");
+  s4.innerHTML = html;
+  scrollToEl("s4-tournament");
+}
+
+// 4. Choose Tournament -> Calculates Alignment -> Late Game Crisis
+function chooseTournament(nodeStats, ragId, ragText) {
+  addStats(nodeStats);
+  
+  // Alignment Logic
+  if (stats.malice >= 7 && stats.ki >= 7) {
+     currentAlignment = "Void Destroyer";
+  } else if (stats.infamy >= 7 && stats.health >= 5) {
+     currentAlignment = "Arcane Inquisitor";
+  } else if (stats.malice >= stats.ki && stats.malice >= stats.infamy) {
+     currentAlignment = "Feral Bloodlust";
+  } else if (stats.infamy >= stats.ki && stats.infamy >= stats.malice) {
+     currentAlignment = "Calculated Tyranny";
+  } else {
+     currentAlignment = "Saiyan Duty";
+  }
+
+  document.getElementById("s-alignment").innerHTML = `
+    <h2>System Override: Alignment Locked</h2>
+    ${renderRAG(ragId, ragText)}
+    <h3 style="color: #66ccff; font-size: 1.5rem;">Path of the ${currentAlignment}</h3>
+    <p>Your cumulative actions have permanently defined Kakarot's psychological archetype.</p>
+  `;
+  scrollToEl("s-alignment");
+
+  let html = `
+    <h2>Section 5: Late-Game Crisis (Age 24)</h2>
+    <p>A space pod crashes on Earth. Your biological brother Raditz emerges, scanning for power levels. Based on your path, decide his fate.</p>
+    <div class="grid-buttons">
+  `;
+
+  crisisChoices[currentAlignment].forEach(choice => {
+    html += `
+      <button onclick='chooseCrisis(${JSON.stringify(choice.stats)}, "${choice.ragId}", "${choice.ragText}")'>
+        ${choice.title}<br><small>${choice.desc}</small>
+      </button>
+    `;
+  });
+  html += `</div>`;
+
+  const s5 = document.getElementById("s5-crisis");
+  s5.innerHTML = html;
+  scrollToEl("s5-crisis");
+}
+
+// 5. Choose Crisis -> Endings
+function chooseCrisis(nodeStats, ragId, ragText) {
+  addStats(nodeStats);
+
+  let title = "";
+  let desc = "";
+  let aftermath = "";
+
+  switch (currentAlignment) {
+    case "Saiyan Duty":
+      title = "Ending 1: The Loyal Vanguard";
+      desc = "Kakarot completes his original Saiyan mission. He joins Raditz and enters the Frieza Force hierarchy.";
+      aftermath = "Earth becomes Kakarot's first trophy conquest as he rises through the ranks.";
+      break;
+    case "Feral Bloodlust":
+      title = "Ending 2: The Apex Predator";
+      desc = "Kakarot rejects all command. He slaughters Raditz, claiming Earth as his personal feral hunting ground.";
+      aftermath = "Frieza's forces mark Earth as a hostile, quarantined anomaly. The deathworld awaits Vegeta.";
+      break;
+    case "Calculated Tyranny":
+      title = "Ending 3: The God-King of Earth";
+      desc = "Kakarot optimizes human global assets and uses the Dragon Balls to become a sovereign planetary deity.";
+      aftermath = "Earth becomes a high-tech fortress-world completely immune to Frieza's control.";
+      break;
+    case "Void Destroyer":
+      title = "Ending 4: The Cosmic Usurper";
+      desc = "Fueled by unparalleled malice and ki, Kakarot breaks the boundaries of his universe, seeking to obliterate the gods themselves.";
+      aftermath = "Even the Gods of Destruction take notice. Universal annihilation protocols are initiated.";
+      break;
+    case "Arcane Inquisitor":
+      title = "Ending 5: The Arcane Emperor";
+      desc = "Fusing dark magic, technology, and Saiyan blood, Kakarot establishes a shadow syndicate that manipulates the galaxy from afar.";
+      aftermath = "The Galactic Patrol is corrupted from the inside. Kakarot rules the universe via proxy.";
+      break;
+  }
+
+  document.getElementById("s6-ending").innerHTML = `
+    <h2>Section 6: Endgame Closure</h2>
+    ${renderRAG(ragId, ragText)}
+    <h3 style="color: #66ccff; font-size: 1.8rem; margin-top: 15px;">${title}</h3>
+    <p>${desc}</p>
+    <div style="border-top: 1px dashed #66ccff; margin: 20px 0; padding-top: 20px;">
+      <h3 style="color: #ffb000;">7 · Cosmic Aftermath</h3>
+      <p style="font-style: italic;">${aftermath}</p>
+    </div>
+  `;
+  
+  scrollToEl("s6-ending");
+}
+
+function resetGame() {
+  stats = { health: 0, ki: 0, malice: 0, infamy: 0 };
+  currentAlignment = "";
+  updateStats();
+
+  const sections = ["s2-childhood", "s3-teenage", "s4-tournament", "s-alignment", "s5-crisis", "s6-ending"];
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.add("hidden");
+    el.innerHTML = "";
+  });
+
+  document.getElementById("s1-start").classList.remove("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// Init
+updateStats();
+</script>
+
+</body>
+</html>
